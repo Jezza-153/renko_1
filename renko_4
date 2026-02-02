@@ -1,0 +1,89 @@
+# Download OHLC data from Yahoo Finance
+df = yf.download(ticker, start=start_date, end=end_date)
+
+# Flatten MultiIndex columns (fix for newer yfinance versions)
+df.columns = df.columns.get_level_values(0)
+
+# Keep only the essential columns
+df = df[['Open', 'High', 'Low', 'Close']]
+
+# Reset index to get Date as a column
+df = df.reset_index()
+
+# Display first few rows
+df.head()
+
+
+
+# Convert Close prices and dates to lists
+prices = df['Close'].values.flatten().tolist()
+dates = df['Date'].tolist()
+
+renko_data = []      # Stores price levels of each brick
+directions = []      # 1 = up, -1 = down, 0 = neutral (first brick)
+renko_dates = []     # Stores the date when each brick was formed
+
+last_price = prices[0]
+renko_data.append(last_price)
+directions.append(0)
+renko_dates.append(dates[0])
+
+for idx, price in enumerate(prices):
+    diff = price - last_price
+    brick_moves = int(diff / brick_size)
+
+    while brick_moves != 0:
+        if brick_moves > 0:
+            last_price += brick_size
+            renko_data.append(last_price)
+            directions.append(1)
+            renko_dates.append(dates[idx])
+            brick_moves -= 1
+        elif brick_moves < 0:
+            last_price -= brick_size
+            renko_data.append(last_price)
+            directions.append(-1)
+            renko_dates.append(dates[idx])
+            brick_moves += 1
+
+print(f"Total Renko bricks: {len(renko_data)}")
+print(f"Date range: {renko_dates[0]} to {renko_dates[-1]}")
+
+
+
+## 5. Calculate X and Y Positions for Bricks
+x_positions = [0]
+y_positions = [renko_data[0]]
+
+for i in range(1, len(renko_data)):
+    prev_x = x_positions[-1]
+    prev_y = y_positions[-1]
+    
+    if renko_data[i] > renko_data[i-1]:
+        x_positions.append(prev_x + 1)
+        y_positions.append(prev_y + brick_size)
+    else:
+        x_positions.append(prev_x + 1)
+        y_positions.append(prev_y - brick_size)
+
+
+
+
+## 5. Calculate X and Y Positions for Bricks
+x_positions = [0]
+y_positions = [renko_data[0]]
+
+for i in range(1, len(renko_data)):
+    prev_x = x_positions[-1]
+    prev_y = y_positions[-1]
+    
+    if renko_data[i] > renko_data[i-1]:
+        x_positions.append(prev_x + 1)
+        y_positions.append(prev_y + brick_size)
+    else:
+        x_positions.append(prev_x + 1)
+        y_positions.append(prev_y - brick_size)
+
+
+
+
